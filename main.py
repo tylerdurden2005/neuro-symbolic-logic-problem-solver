@@ -9,6 +9,7 @@ from module2.logical_exp_parser import TreeToStringConverter
 from module2.prenex_normal_from import Prenexer
 from module2.scolem_normal_form import Skolemizer
 from module2.resolution import resolution
+from module3.explanation import Proofer
 
 class Application(tk.Tk):
     def __init__(self):
@@ -174,7 +175,9 @@ class Application(tk.Tk):
             content = file.read()
             result_parts.append(self.format_section("Лог доказательства методом резолюции:", content))
 
-        result = "\n".join(result_parts)
+        results_before_gpt = "\n".join(result_parts)
+        proof = Proofer()
+        result = proof.call_proofs(results_before_gpt)
 
         self.display_result(result)
 
