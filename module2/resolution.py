@@ -9,11 +9,6 @@ def resolution(tree_formulas):
             disjuncts = convert_tree_to_list(tree_formulas[i]) + disjuncts
             break
         disjuncts += convert_tree_to_list(tree_formulas[i])
-    print(len(disjuncts))
-    for i in disjuncts:
-        for j in i:
-            print(str(j), end='')
-        print()
     return resolution_method(disjuncts)
 
 # метод резолюций
