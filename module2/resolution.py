@@ -1,6 +1,20 @@
 from module2.base_object import Functor, Var
 from module2.unification import unify_predicates, apply_substitution_to_predicate, args_equal
+from module2.preparing_data import convert_tree_to_list
 
+def resolution(tree_formulas):
+    disjuncts = []
+    for i in range(len(tree_formulas)):
+        if i == len(tree_formulas) - 1:
+            disjuncts = convert_tree_to_list(tree_formulas[i]) + disjuncts
+            break
+        disjuncts += convert_tree_to_list(tree_formulas[i])
+    print(len(disjuncts))
+    for i in disjuncts:
+        for j in i:
+            print(str(j), end='')
+        print()
+    return resolution_method(disjuncts)
 
 # метод резолюций
 def resolution_method(disjuncts, max_iterations=1000):
