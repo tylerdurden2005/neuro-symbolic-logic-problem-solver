@@ -71,7 +71,7 @@ def resolution_method(disjuncts, max_iterations=1000):
                     if len(resolvent) == 0:
                         with open('../log.txt', 'a', encoding='utf-8') as file:
                             file.write("Найден пустой дизъюнкт. Доказательство завершено!\n")
-                        return True, all_clauses + new_clauses
+                        return True
 
                     # проверка резольвенты на тавтологию
                     if not is_tautology(resolvent):
@@ -91,7 +91,7 @@ def resolution_method(disjuncts, max_iterations=1000):
         if not new_clauses:
             with open('../log.txt', 'a', encoding='utf-8') as file:
                 file.write("Новых резольвент не найдено. Выводимость отсутствует\n")
-            return False, all_clauses
+            return False
 
         # добавление новых резольвент к общему списку
         all_clauses.extend(new_clauses)
@@ -99,7 +99,7 @@ def resolution_method(disjuncts, max_iterations=1000):
 
     with open('../log.txt', 'a', encoding='utf-8') as file:
         file.write(f"Достигнут предел итераций ({max_iterations}). Доказательство не завершено\n")
-    return False, all_clauses
+    return False
 
 
 # построение индекса предикатов для быстрого поиска контрарных пар
