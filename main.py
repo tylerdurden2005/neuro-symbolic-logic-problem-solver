@@ -8,7 +8,7 @@ from module2.logical_exp_parser import LogicalExpressionParser
 from module2.logical_exp_parser import TreeToStringConverter
 from module2.prenex_normal_from import Prenexer
 from module2.scolem_normal_form import Skolemizer
-
+from module2.resolution import resolution
 
 class Application(tk.Tk):
     def __init__(self):
@@ -155,22 +155,26 @@ class Application(tk.Tk):
             self.display_result("Ошибка: Введите текст для анализа!")
             return
 
+        # запрос к gpt
         text_formalizer = TextFormalizer()
         gpt_info = text_formalizer.formalize_text(input_text)
         text_formulas = gpt_info["formulas"]
+        # преобразовать формулы
         all_formulas, prenex_text, skolem_text = self.change_all_formulas(text_formulas)
+        # вызов резолюции
+        resolution(all_formulas)
+
         result_parts = []
         result_parts.append(self.format_section("Начальные условия:", [gpt_info["raw_response"]]))
         result_parts.append(self.format_section("Предваренная нормальная форма:", prenex_text))
         result_parts.append(self.format_section("Сколемовская нормальная форма:", skolem_text))
 
-        with open('module2/log.txt', 'r', encoding='utf-8') as file:
+
+        with open('log.txt', 'r', encoding='utf-8') as file:
             content = file.read()
             result_parts.append(self.format_section("Лог доказательства методом резолюции:", content))
 
         result = "\n".join(result_parts)
-
-
 
         self.display_result(result)
 
