@@ -5,13 +5,13 @@ class Prenexer:
     def __init__(self):
         self.used_names = set()
     def replacement_impl_equiv(self, node: Node):
-        # Убираем импликации и эквиваленции в формуле
+        # убираем импликации и эквиваленции в формуле
         if node is None:
             return None
 
         new_left = self.replacement_impl_equiv(node.left)
         new_right = self.replacement_impl_equiv(node.right)
-        # Заменяем операторы
+        # заменяем операторы
         if node.value == '→':
             # A → B ≡ ¬A ∨ B
             not_left = Node('¬', new_left, None)
@@ -26,21 +26,21 @@ class Prenexer:
             return Node('∧', left_impl, right_impl)
 
         else:
-            # Для всех других операторов возвращаем узел с обработанными потомками
+            # для всех других операторов возвращаем узел с обработанными потомками
             return Node(node.value, new_left, new_right)
 
     def push_negation_to_atoms(self, node):
-        # Проталкивание отрицания к атомарным формулам
+        # проталкивание отрицания к атомарным формулам
         if node is None:
             return None
-        # Если это отрицание
+        # если это отрицание
         if node.value == '¬':
             child = node.left
-            # Двойное отрицание: ¬¬A ≡ A
+            # двойное отрицание: ¬¬A ≡ A
             if child.value == '¬':
                 return self.push_negation_to_atoms(child.left)
 
-            # Закон де Моргана: ¬(A ∧ B) ≡ ¬A ∨ ¬B
+            # закон де Моргана: ¬(A ∧ B) ≡ ¬A ∨ ¬B
             elif child.value == '∧':
                 left_neg = Node('¬', child.left)
                 right_neg = Node('¬', child.right)
@@ -48,7 +48,7 @@ class Prenexer:
                 new_right = self.push_negation_to_atoms(right_neg)
                 return Node('∨', new_left, new_right)
 
-            # Закон де Моргана: ¬(A ∨ B) ≡ ¬A ∧ ¬B
+            # закон де Моргана: ¬(A ∨ B) ≡ ¬A ∧ ¬B
             elif child.value == '∨':
                 left_neg = Node('¬', child.left)
                 right_neg = Node('¬', child.right)
@@ -56,42 +56,42 @@ class Prenexer:
                 new_right = self.push_negation_to_atoms(right_neg)
                 return Node('∧', new_left, new_right)
 
-            # Для кванторов: ¬∀x P(x) ≡ ∃x ¬P(x)
+            # для кванторов: ¬∀x P(x) ≡ ∃x ¬P(x)
             elif '∀' in child.value:
                 new_quant = child.value.replace('∀', '∃')
                 new_body = Node('¬', child.left)
                 return Node(new_quant, self.push_negation_to_atoms(new_body))
 
-            # Для кванторов: ¬∃x P(x) ≡ ∀x ¬P(x)
+            # для кванторов: ¬∃x P(x) ≡ ∀x ¬P(x)
             elif '∃' in child.value:
                 new_quant = child.value.replace('∃', '∀')
                 new_body = Node('¬', child.left)
                 return Node(new_quant, self.push_negation_to_atoms(new_body))
             else:
-                # Предикаты
+                # предикаты
                 return node
 
-        # Обрабатываем кванторы, как встреченные узлы
+        # обрабатываем кванторы, как встреченные узлы
         elif '∀' in node.value or '∃' in node.value:
             new_body = self.push_negation_to_atoms(node.left)
             return Node(node.value, new_body)
 
-        # Обрабатываем бинарные операторы, как встреченные узлы
+        # обрабатываем бинарные операторы, как встреченные узлы
         elif node.value in ['∧', '∨']:
             new_left = self.push_negation_to_atoms(node.left)
             new_right = self.push_negation_to_atoms(node.right)
             return Node(node.value, new_left, new_right)
         else:
-            # Предикаты
+            # предикаты
             return node
 
     def generate_unique_name(self):
-        # Генератор имени переменной
+        # генератор имени переменной
         base_chars = "xyzwtuv"
         for char in base_chars:
             if char not in self.used_names:
                 return char
-        # Если все одиночные символы заняты, добавляем индексы
+        # если все одиночные символы заняты, добавляем индексы
         counter = 1
         while True:
             for char in base_chars:
@@ -101,29 +101,29 @@ class Prenexer:
             counter += 1
 
     def rename_related_vars(self, node: Node):
-        # Переименование связанных переменных
+        # переименование связанных переменных
         if node is None:
             return None
 
-        # Если узел - квантор
+        # если узел - квантор
         if '∀' in node.value or '∃' in node.value:
             quantifier_char = node.value[0]
             var_name = node.value[1:]
 
-            # Проверяем, использовалось ли уже это имя переменной в формуле
+            # проверяем, использовалось ли уже это имя переменной в формуле
             if var_name in self.used_names:
-                # Конфликт имен - генерируем новое имя
+                # конфликт имен - генерируем новое имя
                 new_name = self.generate_unique_name()
-                # Заменяем имя переменной в кванторе
+                # заменяем имя переменной в кванторе
                 node.value = quantifier_char + new_name
                 self.used_names.add(new_name)
-                # Заменяем все вхождения этой переменной в поддереве квантора
+                # заменяем все вхождения этой переменной в поддереве квантора
                 if node.left:
                     node.left = self.replace_vars(node.left, var_name, new_name)
             else:
-                # Имя не использовалось, добаляется в множество использоанных
+                # имя не использовалось, добаляется в множество использоанных
                 self.used_names.add(var_name)
-            # Обрабатываем поддерево
+            # обрабатываем поддерево
             node.left = self.rename_related_vars(node.left)
         else:
             node.left = self.rename_related_vars(node.left)
@@ -131,20 +131,20 @@ class Prenexer:
         return node
 
     def replace_vars(self, node: Node, old, new):
-        # Вспомогательная функция замены переменной в поддереве квантора
+        # вспомогательная функция замены переменной в поддереве квантора
         if node is None:
             return None
-        # Если встретили квантор с именем переменной, которую меняем
+        # если встретили квантор с именем переменной, которую меняем
         if ('∀' in node.value or '∃' in node.value) and node.value[1:] == old:
             return node
         #
         if '∀' in node.value or '∃' in node.value:
             new_left = self.replace_vars(node.left, old, new)
             return Node(node.value, new_left, node.right)
-        # Если узел - предикат
+        # если узел - предикат
         if node.object is not None and isinstance(node.object, Predicate):
             new_args = []
-            # Делаем замену в его термах
+            # делаем замену в его термах
             for arg in node.object.args:
                 new_arg = self.replace_var_in_term(arg, old, new)
                 new_args.append(new_arg)
@@ -152,65 +152,65 @@ class Prenexer:
             #new_left = self.replace_vars(node.left, old, new)
             #new_right = self.replace_vars(node.right, old, new)
             return Node(str(predicate))
-        # Операции
+        # операции
         new_left = self.replace_vars(node.left, old, new)
         new_right = self.replace_vars(node.right, old, new)
         return Node(node.value, new_left, new_right)
 
 
     def replace_var_in_term(self, term, old, new):
-        # Переименование термов
+        # переименование термов
         if isinstance(term, Var):
-            # Если это переменная, которую нужно заменить
+            # если это переменная, которую нужно заменить
             if term.name == old:
-                # Замена на новое имя
+                # замена на новое имя
                 return Var(new)
             else:
-                # Оставляем как есть
+                # оставляем как есть
                 return term
         elif isinstance(term, Functor):
-            # Рекурсивно обрабатываем аргументы функтора
+            # рекурсивно обрабатываем аргументы функтора
             new_args = []
             for arg in term.args:
                 new_arg = self.replace_var_in_term(arg, old, new)
                 new_args.append(new_arg)
-            # Создаем новый функтор с обновленными аргументами
+            # создаем новый функтор с обновленными аргументами
             return Functor(term.name, new_args)
         else:
             return term
 
     def to_CNF(self, node: Node):
-        # Приводим матрицу к КНФ
+        # приводим матрицу к КНФ
         if node is None:
             return None
 
-        # Рекурсивно преобразуем потомков
+        # рекурсивно преобразуем потомков
         left_cnf = self.to_CNF(node.left)
         right_cnf = self.to_CNF(node.right)
 
-        # Обрабатываем операторы
+        # обрабатываем операторы
         if node.value == '∧':
-            # Просто возвращаем
+            # просто возвращаем
             return Node('∧', left_cnf, right_cnf)
 
         elif node.value == '∨':
-            # Применяем дистрибутивность
+            # применяем дистрибутивность
             return self.distribute_or(left_cnf, right_cnf)
 
         else:
-            # Для всех других узлов (кванторы, предикаты, отрицания)
+            # для всех других узлов (кванторы, предикаты, отрицания)
             return Node(node.value, left_cnf, right_cnf)
 
     def distribute_or(self, left, right):
-        # Применяем дистрибутивность
-        # Если левая часть - конъюнкция: (A ∧ B) ∨ C ≡ (A ∨ C) ∧ (B ∨ C)
+        # применяем дистрибутивность
+        # если левая часть - конъюнкция: (A ∧ B) ∨ C ≡ (A ∨ C) ∧ (B ∨ C)
         if left and left.value == '∧':
             a = left.left
             b = left.right
             c = right
             return Node('∧',self.distribute_or(a, c),self.distribute_or(b, c))
 
-        # Если правая часть - конъюнкция: A ∨ (B ∧ C) ≡ (A ∨ B) ∧ (A ∨ C)
+        # если правая часть - конъюнкция: A ∨ (B ∧ C) ≡ (A ∨ B) ∧ (A ∨ C)
         elif right and right.value == '∧':
             a = left
             b = right.left
@@ -219,7 +219,7 @@ class Prenexer:
                         self.distribute_or(a, b),
                         self.distribute_or(a, c))
 
-        # Если обе части - конъюнкции: (A ∧ B) ∨ (C ∧ D) ≡ (A ∨ C) ∧ (A ∨ D) ∧ (B ∨ C) ∧ (B ∨ D)
+        # если обе части - конъюнкции: (A ∧ B) ∨ (C ∧ D) ≡ (A ∨ C) ∧ (A ∨ D) ∧ (B ∨ C) ∧ (B ∨ D)
         elif (left and left.value == '∧') and (right and right.value == '∧'):
             a = left.left
             b = left.right
@@ -229,35 +229,35 @@ class Prenexer:
                         Node('∧', self.distribute_or(b, c),self.distribute_or(b, d)))
 
         else:
-            # В поддеревьях нет конъюнкции
+            # в поддеревьях нет конъюнкции
             return Node('∨', left, right)
 
 
     def take_out_quanters(self, node: Node):
-        # Выносим кванторы вперед
+        # выносим кванторы вперед
         if node is None:
             return None
-        # Если в узле квантор
+        # если в узле квантор
         if '∀' in node.value or '∃' in node.value:
             quantifier = node.value
             subtree = self.take_out_quanters(node.left)
             return Node(quantifier, subtree, None)
-        # Если операция '∧', '∨'
+        # если операция '∧', '∨'
         elif node.value in ['∧', '∨']:
             left_subtree = self.take_out_quanters(node.left)
             right_subtree = self.take_out_quanters(node.right)
 
-            # Собираем кванторы из обеих частей
+            # собираем кванторы из обеих частей
             left_quants, left_matrix = self.collect_all_quantifiers(left_subtree)
             right_quants, right_matrix = self.collect_all_quantifiers(right_subtree)
 
-            # Создаем тело без кванторов
+            # создаем тело без кванторов
             new_matrix = Node(node.value, left_matrix, right_matrix)
 
-            # Объединяем с сохранением зависимостей
+            # объединяем с сохранением зависимостей
             all_quants = self.merge_quantifiers(left_quants, right_quants)
 
-            # Добавляем перед матрицей все кванторы
+            # добавляем перед матрицей все кванторы
             result = new_matrix
             for quant in reversed(all_quants):
                 result = Node(quant, result, None)
@@ -270,28 +270,28 @@ class Prenexer:
             return Node(node.value, left_processed, right_processed)
 
     def merge_quantifiers(self, left_quants, right_quants):
-        # Сохраняем исходные последовательности кванторов из каждой части
-        # Объединяем их по принципу: независимые блоки ∃ сначала, затем остальные
+        # сохраняем исходные последовательности кванторов из каждой части
+        # оОбъединяем их по принципу: независимые блоки ∃ сначала, затем остальные
 
-        # Находим префиксы независимых ∃ кванторов в каждой части
+        # находим префиксы независимых ∃ кванторов в каждой части
         left_indep_prefix = self.get_independent_prefix(left_quants)
         right_indep_prefix = self.get_independent_prefix(right_quants)
 
-        # Находим оставшиеся кванторы (с зависимостями)
+        # находим оставшиеся кванторы (с зависимостями)
         left_dependent = left_quants[len(left_indep_prefix):]
         right_dependent = right_quants[len(right_indep_prefix):]
 
-        # Объединяем: независимые ∃ из обеих частей сначала
+        # объединяем: независимые ∃ из обеих частей сначала
         merged = left_indep_prefix + right_indep_prefix
 
-        # Затем добавляем зависимые части, сохраняя их внутренний порядок
+        # затем добавляем зависимые части, сохраняя их внутренний порядок
         merged.extend(left_dependent)
         merged.extend(right_dependent)
 
         return merged
 
     def get_independent_prefix(self, quantifiers):
-        # Находим префиксы независимых ∃ кванторов
+        # находим префиксы независимых ∃ кванторов
         independent = []
         for quant in quantifiers:
             if quant.startswith('∃'):
@@ -302,7 +302,7 @@ class Prenexer:
         return independent
 
     def collect_all_quantifiers(self, node):
-        # Собираем все кванторы
+        # собираем все кванторы
         quantifiers = []
         current = node
 
@@ -313,16 +313,16 @@ class Prenexer:
         return quantifiers, current
 
     def build_prenex_form(self, node: Node):
-        # Главный метод - запуск всех этапов
-        # Исключаем импликации и эквиваленции
+        # главный метод - запуск всех этапов
+        # исключаем импликации и эквиваленции
         formula = self.replacement_impl_equiv(node)
-        # Проталкивание отрицания к атомарным формулам
+        # проталкивание отрицания к атомарным формулам
         formula = self.push_negation_to_atoms(formula)
-        # Переименование связанных переменных
+        # переименование связанных переменных
         formula = self.rename_related_vars(formula)
-        # Выносим все кванторы вперед
+        # выносим все кванторы вперед
         formula = self.take_out_quanters(formula)
-        # Матрицу приводи к КНФ
+        # матрицу приводи к КНФ
         formula = self.to_CNF(formula)
         self.used_names.clear()
         return formula

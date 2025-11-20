@@ -9,7 +9,7 @@ class TextFormalizer:
         self.system_prompt = self.create_system_prompt()
 
     def create_system_prompt(self):
-        # Создание промта
+        # создание промта
         return """Ты — эксперт по формальной логике и компьютерной лингвистике.
 ТВОЯ ЗАДАЧА:
 Преобразовать входной текст на естественном языке в набор корректных и непротиворечивых формул логики предикатов первого порядка.
@@ -94,14 +94,14 @@ sokrat – Сократ
     def formalize_text(self, text: str):
         user_prompt = f'Текст: "{text}"'
         try:
-            # Вызов OpenAI
+            # вызов OpenAI
             resp = self.client.chat.completions.create(
                 model=self.config.MODEL_NAME,
                 messages=[ {"role": "system", "content": self.system_prompt},{"role": "user", "content": user_prompt}]
             )
-            # Извлечение текстового ответа из модели
+            # извлечение текстового ответа из модели
             raw_response = resp.choices[0].message.content.strip()
-            # Текст парсится на формулы и словарь предикатов
+            # текст парсится на формулы и словарь предикатов
             predicates, formulas = self.parse_response(raw_response)
             return {
                 "raw_response": raw_response,
@@ -112,7 +112,7 @@ sokrat – Сократ
             raise Exception(f"Ошибка при вызове OpenAI API: {e}")
 
     def parse_response(self, response: str):
-        # Текст парсится на формулы и словарь предикатов
+        # текст парсится на формулы и словарь предикатов
         cleaned_response = response.strip()
         predicates = []
         formulas = []
